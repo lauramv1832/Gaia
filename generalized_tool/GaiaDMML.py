@@ -18,19 +18,19 @@ and trimming the data to compare against the clustering algorithm.
 """
 
 def distance(x):
-    if x < 0:
+    if int(x) <= 0:
         return 0
     else:
-        return 1/x
+        return 1/int(x)
 
 def x(R, b, l):
-    return R * math.cos(b*(math.pi/180)) * math.cos(l*(math.pi/180))
+    return int(R) * math.cos(int(b)*(math.pi/180)) * math.cos(int(l)*(math.pi/180))
 
 def y(R, b, l):
-    return R * math.cos(b*(math.pi/180)) * math.sin(l*(math.pi/180))
+    return int(R) * math.cos(int(b)*(math.pi/180)) * math.sin(int(l)*(math.pi/180))
 
 def z(R, b):
-    return R * math.sin(b*(math.pi/180))
+    return int(R) * math.sin(int(b)*(math.pi/180))
 
 def absmag(m, d):
     return (((math.log10(d) * 5)*-1)+5)+m
@@ -59,17 +59,29 @@ def create_df(csvfile):
     :return:
     """
     df = pd.read_csv(csvfile)
-    df.loc[:, 'parallax_arcsec'] = df['parallax'].apply(lambda x: x * .001)
-    df.loc[:, 'R'] = df['parallax_arcsec'].apply(distance)
-    df.loc[:, 'x'] = df.apply(lambda r: x(r['R'], r['b'], r['l']), axis=1)
-    df.loc[:, 'y'] = df.apply(lambda r: y(r['R'], r['b'], r['l']), axis=1)
-    df.loc[:, 'z'] = df.apply(lambda r: z(r['R'], r['b']), axis=1)
-    df.loc[:, 'magnitude'] = df.apply(lambda r: absmag(r['phot_g_mean_mag'], r['R']), axis=1)
-    df.loc[:, 'luminosity'] = df.apply(lambda r: luminosity(r['phot_g_mean_mag'], r['R']), axis=1)
-    df.loc[:, 'solar_luminosity'] = df.apply(lambda r: solar_lum(r['luminosity']), axis=1)
-    df.loc[:, 'radius'] = df.apply(lambda r: radius(r['luminosity'], r['teff_val']), axis=1)
+    if 'parallax' in df.columns:
+        df = df.dropna(subset=['parallax'])
+        df.loc[:, 'parallax_arcsec'] = df['parallax'].apply(lambda x: int(x) * .001)
 
-    return df
+        if 'b' in df.columns and 'l' in df.columns:
+            df.loc[:, 'R'] = df['parallax_arcsec'].apply(distance)
+            df.loc[:, 'x'] = df.apply(lambda r: x(r['R'], r['b'], r['l']), axis=1)
+            df.loc[:, 'y'] = df.apply(lambda r: y(r['R'], r['b'], r['l']), axis=1)
+            df.loc[:, 'z'] = df.apply(lambda r: z(r['R'], r['b']), axis=1)
+
+        else:
+            print("Need columns \'b\' and \'l\' to calculate x, y, and z coordinates.")
+            exit()
+
+        return df
+    else:
+        print("Need column \'parallax\' to calculate x, y, and z coordinates.")
+        exit()
+    #df.loc[:, 'magnitude'] = df.apply(lambda r: absmag(r['phot_g_mean_mag'], r['R']), axis=1)
+    #df.loc[:, 'luminosity'] = df.apply(lambda r: luminosity(r['phot_g_mean_mag'], r['R']), axis=1)
+    #df.loc[:, 'solar_luminosity'] = df.apply(lambda r: solar_lum(r['luminosity']), axis=1)
+    #df.loc[:, 'radius'] = df.apply(lambda r: radius(r['luminosity'], r['teff_val']), axis=1)
+
 
 def distance_plot(df, csvfile):
     fig = plt.figure()
@@ -107,114 +119,196 @@ def distance_plot(df, csvfile):
     plt.savefig('distance_plot.png')
 
 def pm_plots(df, df_trimmed, csvfile):
-    fig = plt.figure()
 
-    ax = fig.add_subplot(121)
-    ax.scatter(df['pmra'], df['pmdec'], s=0.1)
-    ax.set_xlim(-100, 100)
-    ax.set_ylim(-100, 100)
-    ax.set_title(csvfile)
-    ax.set_xlabel("pmra")
-    ax.set_ylabel("pmdec")
+    if 'pmra' in df.columns and 'pmdec' in df.columns:
 
-    ax1 = fig.add_subplot(122)
-    ax1.scatter(df_trimmed['pmra'], df_trimmed['pmdec'], s=0.1)
-    ax1.set_xlim(-100, 100)
-    ax1.set_ylim(-100, 100)
-    ax1.set_title(csvfile + " trimmed")
-    ax1.set_xlabel("pmra")
-    ax1.set_ylabel("pmdec")
+        fig = plt.figure()
 
-    plt.savefig('pm_plots.png')
+        ax = fig.add_subplot(121)
+        ax.scatter(df['pmra'], df['pmdec'], s=0.1)
+        ax.set_xlim(-100, 100)
+        ax.set_ylim(-100, 100)
+        ax.set_title(csvfile)
+        ax.set_xlabel("pmra")
+        ax.set_ylabel("pmdec")
+
+        ax1 = fig.add_subplot(122)
+        ax1.scatter(df_trimmed['pmra'], df_trimmed['pmdec'], s=0.1)
+        ax1.set_xlim(-100, 100)
+        ax1.set_ylim(-100, 100)
+        ax1.set_title(csvfile + " trimmed")
+        ax1.set_xlabel("pmra")
+        ax1.set_ylabel("pmdec")
+
+        plt.savefig('pm_plots.png')
+
+    else:
+        print("Need columns \'pmra\' and \'pmdec\' to plot proper motion diagram.")
+        exit()
 
 def hr_plots(df, csvfile):
 
-    fig = plt.figure()
+    if 'g_rp' in df.columns and 'bp_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
 
-    ax1 = fig.add_subplot(121)
-    ax1.scatter(df['g_rp'], df['phot_g_mean_mag'], s=1)
-    ax1.set_xlim(-1, 3)
-    ax1.set_ylim(25, 0)
-    ax1.set_title(csvfile + ' g-r')
-    ax1.set_xlabel("color index (g-rp)")
-    ax1.set_ylabel("abs mag (g)")
+        fig = plt.figure()
 
-    ax2 = fig.add_subplot(122)
-    ax2.scatter(df['bp_rp'], df['phot_g_mean_mag'], s=1)
-    ax2.set_xlim(-1, 4)
-    ax2.set_ylim(25, 0)
-    ax2.set_title(csvfile + ' b-r')
-    ax2.set_xlabel("color index (bp-rp)")
-    ax2.set_ylabel("abs mag (g)")
+        ax1 = fig.add_subplot(121)
+        ax1.scatter(df['g_rp'], df['phot_g_mean_mag'], s=1)
+        ax1.set_xlim(-1, 3)
+        ax1.set_ylim(25, 0)
+        ax1.set_title(csvfile + ' g-r')
+        ax1.set_xlabel("color index (g-rp)")
+        ax1.set_ylabel("abs mag (g)")
 
-    plt.savefig('hr_plots.png')
+        ax2 = fig.add_subplot(122)
+        ax2.scatter(df['bp_rp'], df['phot_g_mean_mag'], s=1)
+        ax2.set_xlim(-1, 5)
+        ax2.set_ylim(25, 0)
+        ax2.set_title(csvfile + ' b-r')
+        ax2.set_xlabel("color index (bp-rp)")
+        ax2.set_ylabel("abs mag (g)")
+
+        plt.savefig('hr_plots.png')
+
+    elif 'bp_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
+
+        fig = plt.figure()
+
+        ax2 = fig.add_subplot(111)
+        ax2.scatter(df['bp_rp'], df['phot_g_mean_mag'], s=1)
+        ax2.set_xlim(-1, 5)
+        ax2.set_ylim(25, 0)
+        ax2.set_title(csvfile + ' b-r')
+        ax2.set_xlabel("color index (bp-rp)")
+        ax2.set_ylabel("abs mag (g)")
+
+        plt.savefig('hr_plots.png')
+
+    elif 'g_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
+
+        fig = plt.figure()
+
+        ax1 = fig.add_subplot(111)
+        ax1.scatter(df['g_rp'], df['phot_g_mean_mag'], s=1)
+        ax1.set_xlim(-1, 3)
+        ax1.set_ylim(25, 0)
+        ax1.set_title(csvfile + ' g-r')
+        ax1.set_xlabel("color index (g-rp)")
+        ax1.set_ylabel("abs mag (g)")
+
+        plt.savefig('hr_plots.png')
+
+    else:
+        print("Need column \'phot_g_mean_mag\' and either columns \'g_rp\' or \'bp_rp\' or both to plot HR diagram(s)")
+        exit()
 
 
 def trim_data(df):
     trimmed_df = df
 
     # parallax error, if error is >= 1/10 of error/parallax, drop it
-    s = 1 / 10
-    for index, row in trimmed_df.iterrows():
-        if row['parallax_error'] / row['parallax'] >= s:
-            trimmed_df = trimmed_df.drop([index])
+    if 'parallax_error' in df.columns and 'parallax' in df.columns:
+        s = 1 / 10
+        for index, row in trimmed_df.iterrows():
+            if row['parallax_error'] / row['parallax'] >= s:
+                trimmed_df = trimmed_df.drop([index])
 
     # duplicate source, if star is a duplicate drop it
-    for index, row in trimmed_df.iterrows():
-        if row['duplicated_source'] == True:
-            trimmed_df = trimmed_df.drop([index])
+    if 'duplicated_source' in df.columns:
+        for index, row in trimmed_df.iterrows():
+            if row['duplicated_source'] == True:
+                trimmed_df = trimmed_df.drop([index])
 
     # astronometric excess noise, if the noise is >= 1 drop it
-    s = 1
-    for index, row in trimmed_df.iterrows():
-        if row['astrometric_excess_noise'] >= s:
-            # print(row['astrometric_excess_noise'])
-            trimmed_df = trimmed_df.drop([index])
+    if 'astrometric_excess_noise' in df.columns:
+        s = 1
+        for index, row in trimmed_df.iterrows():
+            if row['astrometric_excess_noise'] >= s:
+                # print(row['astrometric_excess_noise'])
+                trimmed_df = trimmed_df.drop([index])
 
     # visibility periods used, if less than 5 visibility periods drop it
-    s = 5
-    for index, row in trimmed_df.iterrows():
-        if row['visibility_periods_used'] <= s:
-            trimmed_df = trimmed_df.drop([index])
+    if 'visibility_periods_used' in df.columns:
+        s = 5
+        for index, row in trimmed_df.iterrows():
+            if row['visibility_periods_used'] <= s:
+                trimmed_df = trimmed_df.drop([index])
 
     # gmag, if gmag is greater than 19 drop it
-    s = 19
-    for index, row in trimmed_df.iterrows():
-        if row['phot_g_mean_mag'] > s:
-            trimmed_df = trimmed_df.drop([index])
+    if 'phot_g_mean_mag' in df.columns:
+        s = 19
+        for index, row in trimmed_df.iterrows():
+            if row['phot_g_mean_mag'] > s:
+                trimmed_df = trimmed_df.drop([index])
 
     return trimmed_df
 
 
 def trimmed_hr(trimmed_df, csvfile):
-    fig = plt.figure()
-    ax = fig.add_subplot(121)
-    ax.scatter(trimmed_df['g_rp'], trimmed_df['phot_g_mean_mag'], s=1)
-    ax.set_xlim(-1, 3)
-    ax.set_ylim(25, 0)
-    ax.set_title(csvfile + ' trimmed g-r')
-    ax.set_xlabel("color index (g-rp)")
-    ax.set_ylabel("abs mag (g)")
 
-    ax2 = fig.add_subplot(122)
-    ax2.scatter(trimmed_df['bp_rp'], trimmed_df['phot_g_mean_mag'], s=1)
-    ax2.set_xlim(-1, 5)
-    ax2.set_ylim(25, 0)
-    ax2.set_title(csvfile + ' trimmed b-r')
-    ax2.set_xlabel("color index (bp-rp)")
-    ax2.set_ylabel("abs mag (g)")
+    if 'g_rp' in trimmed_df.columns and \
+                    'bp_rp' in trimmed_df.columns and \
+                    'phot_g_mean_mag' in trimmed_df.columns:
 
-    plt.savefig('hr_plots_trimmed.png')
+        fig = plt.figure()
 
+        ax1 = fig.add_subplot(121)
+        ax1.scatter(trimmed_df['g_rp'], trimmed_df['phot_g_mean_mag'], s=1)
+        ax1.set_xlim(-1, 3)
+        ax1.set_ylim(25, 0)
+        ax1.set_title(csvfile + ' trimmed g-r')
+        ax1.set_xlabel("color index (g-rp)")
+        ax1.set_ylabel("abs mag (g)")
+
+        ax2 = fig.add_subplot(122)
+        ax2.scatter(trimmed_df['bp_rp'], trimmed_df['phot_g_mean_mag'], s=1)
+        ax2.set_xlim(-1, 5)
+        ax2.set_ylim(25, 0)
+        ax2.set_title(csvfile + ' trimmed b-r')
+        ax2.set_xlabel("color index (bp-rp)")
+        ax2.set_ylabel("abs mag (g)")
+
+        plt.savefig('hr_plots_trimmed.png')
+
+    elif 'bp_rp' in trimmed_df.columns and 'phot_g_mean_mag' in trimmed_df.columns:
+
+        fig = plt.figure()
+
+        ax2 = fig.add_subplot(111)
+        ax2.scatter(trimmed_df['bp_rp'], trimmed_df['phot_g_mean_mag'], s=1)
+        ax2.set_xlim(-1, 5)
+        ax2.set_ylim(25, 0)
+        ax2.set_title(csvfile + ' trimmed b-r')
+        ax2.set_xlabel("color index (bp-rp)")
+        ax2.set_ylabel("abs mag (g)")
+
+        plt.savefig('hr_plots_trimmed.png')
+
+    elif 'g_rp' in trimmed_df.columns and 'phot_g_mean_mag' in trimmed_df.columns:
+
+        fig = plt.figure()
+
+        ax1 = fig.add_subplot(111)
+        ax1.scatter(trimmed_df['g_rp'], trimmed_df['phot_g_mean_mag'], s=1)
+        ax1.set_xlim(-1, 3)
+        ax1.set_ylim(25, 0)
+        ax1.set_title(csvfile + ' trimmed g-r')
+        ax1.set_xlabel("color index (g-rp)")
+        ax1.set_ylabel("abs mag (g)")
+
+        plt.savefig('hr_plots_trimmed.png')
+
+    else:
+        print("Need column \'phot_g_mean_mag\' and either columns \'g_rp\' or \'bp_rp\' to plot HR diagram(s)")
+        exit()
 
 
 """
 Machine Learning running DBSCAN on the data to find the cluster(s).
 """
 
-
 def source_id(d):
-    df = d[['x', 'y', 'z', 'pmra', 'pmdec', 'source_id']]
+    df = d[['x', 'y', 'z', 'pmra', 'pmdec', 'phot_g_mean_mag', 'source_id']]
     X = df.to_numpy()
 
     db = DBSCAN(eps=5, min_samples=150).fit(X)  # HERE
@@ -240,7 +334,7 @@ def source_id(d):
 
 
 def machine_learning(d):
-    df = d[['x', 'y', 'z', 'pmra', 'pmdec']]
+    df = d[['x', 'y', 'z', 'pmra', 'pmdec', 'phot_g_mean_mag']]
     X = df.to_numpy()
 
     db = DBSCAN(eps=5, min_samples=150).fit(X)  # HERE
@@ -330,7 +424,22 @@ def compare_hr(df_trimmed, df_all, df_all_temp):
 
 
 def main():
-    csvfile = sys.argv[1]
+
+    print("\nWelcome to Data Mining the Gaia database!\n")
+    print("This program takes input of a csv file, "
+          "outputs graphs to help you understand your data, \n"
+          "and asks if you want to proceed to the Machine Learning portion "
+          "and run DBSCAN on your data to find stellar clusters.\n\n"
+          "The csv file you enter should contain these columns for the program to run smoothly:\n"
+          "parallax, b, l, pmra, pmdec, phot_g_mean_mag, and either bp_rp or g_rp.\n\n"
+          "In order to trim the data for better results, these columns are appreciated, but not necessary:\n"
+          "parallax_error, duplicated_source, astrometric_excess_noise, and visibility_periods_used.\n\n")
+
+    arg = input("Please enter a csv file: ")
+    #while arg.split(".")[1] != 'csv':
+    while 'csv' not in arg:
+        arg = input("Please enter a csv file: ")
+    csvfile = arg
 
     # Data Mining
     # Create the df
@@ -345,15 +454,23 @@ def main():
     # Plot the proper motion
     pm_plots(df, trimmed_df, csvfile)
 
-    #Machine Learning
-    # Find source_id in df
-    df_all_temp = source_id(df)
-    # Find df for DBSCAN, and array of labels
-    df_all, labels, n_clusters, n_noise = machine_learning(df)
-    # Calculate how many stars are in the cluster(s) vs anomaly
-    amount(labels, n_clusters, n_noise)
-    compare_hr(trimmed_df, df_all, df_all_temp)
-
+    ans = input("Would you like to continue onto DBSCAN? (y/n) ")
+    temp = ans
+    while temp not in ('y', 'n'):
+        ans = input("Please input y or n: ")
+        temp = ans
+    if temp == 'y':
+        print()
+        #Machine Learning
+        # Find source_id in df
+        df_all_temp = source_id(df)
+        # Find df for DBSCAN, and array of labels
+        df_all, labels, n_clusters, n_noise = machine_learning(df)
+        # Calculate how many stars are in the cluster(s) vs anomaly
+        amount(labels, n_clusters, n_noise)
+        compare_hr(trimmed_df, df_all, df_all_temp)
+    else:
+        print("Program end.")
 
 
 if __name__ == '__main__':
