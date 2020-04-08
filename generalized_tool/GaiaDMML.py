@@ -18,19 +18,19 @@ and trimming the data to compare against the clustering algorithm.
 """
 
 def distance(x):
-    if int(x) <= 0:
+    if x <= 0:
         return 0
     else:
-        return 1/int(x)
+        return 1/x
 
 def x(R, b, l):
-    return int(R) * math.cos(int(b)*(math.pi/180)) * math.cos(int(l)*(math.pi/180))
+    return R * math.cos(b*(math.pi/180)) * math.cos(l*(math.pi/180))
 
 def y(R, b, l):
-    return int(R) * math.cos(int(b)*(math.pi/180)) * math.sin(int(l)*(math.pi/180))
+    return R * math.cos(b*(math.pi/180)) * math.sin(l*(math.pi/180))
 
 def z(R, b):
-    return int(R) * math.sin(int(b)*(math.pi/180))
+    return R * math.sin(b*(math.pi/180))
 
 def absmag(m, d):
     return (((math.log10(d) * 5)*-1)+5)+m
@@ -61,7 +61,7 @@ def create_df(csvfile):
     df = pd.read_csv(csvfile)
     if 'parallax' in df.columns:
         df = df.dropna(subset=['parallax'])
-        df.loc[:, 'parallax_arcsec'] = df['parallax'].apply(lambda x: int(x) * .001)
+        df.loc[:, 'parallax_arcsec'] = df['parallax'].apply(lambda x: x * .001)
 
         if 'b' in df.columns and 'l' in df.columns:
             df.loc[:, 'R'] = df['parallax_arcsec'].apply(distance)
@@ -86,14 +86,14 @@ def create_df(csvfile):
 def distance_plot(df, csvfile):
     fig = plt.figure()
     axp = fig.add_subplot(221, projection='3d')
-    axp.scatter(df['x'], df['z'], df['y'], s=0.005)
+    axp.scatter(df['x'], df['z'], df['y'], s=0.05)
     axp.set_xlabel('x')
     axp.set_ylabel('z')
     axp.set_zlabel('y')
     axp.set_title(csvfile)
 
     axp1 = fig.add_subplot(222, projection='3d')
-    axp1.scatter(df['x'], df['z'], df['y'], s=0.005)
+    axp1.scatter(df['x'], df['z'], df['y'], s=0.05)
     axp1.set_xlabel('x')
     axp1.set_ylabel('z')
     axp1.set_zlabel('y')
@@ -101,7 +101,7 @@ def distance_plot(df, csvfile):
     axp1.view_init(0, 90)
 
     axp2 = fig.add_subplot(223, projection='3d')
-    axp2.scatter(df['x'], df['z'], df['y'], s=0.005)
+    axp2.scatter(df['x'], df['z'], df['y'], s=0.05)
     axp2.set_xlabel('x')
     axp2.set_ylabel('z')
     axp2.set_zlabel('y')
@@ -109,7 +109,7 @@ def distance_plot(df, csvfile):
     axp2.view_init(0, 180)
 
     axp3 = fig.add_subplot(224, projection='3d')
-    axp3.scatter(df['x'], df['z'], df['y'], s=0.005)
+    axp3.scatter(df['x'], df['z'], df['y'], s=0.05)
     axp3.set_xlabel('x')
     axp3.set_ylabel('z')
     axp3.set_zlabel('y')
