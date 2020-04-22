@@ -204,7 +204,7 @@ def hr_plots(df, csvfile):
 
 
 def trim_data(df):
-    trimmed_df = df
+    trimmed_df = df.copy(deep=False)
 
     PARALLAX_S = 1 / 10
     ASTROMETRIC_EXCESS_NOISE_S = 1
@@ -216,59 +216,17 @@ def trim_data(df):
     for index, row in trimmed_df.iterrows():
         if 'parallax_error' in df.columns and 'parallax' in df.columns \
         and row['parallax_error'] / row['parallax'] >= PARALLAX_S:
-            #trimmed_df = trimmed_df.drop([index])
             inds_to_drop.append(index)
         elif 'duplicated_source' in df.columns and row['duplicated_source'] == True:
-            #trimmed_df = trimmed_df.drop([index])
             inds_to_drop.append(index)
         elif 'astrometric_excess_noise' in df.columns and row['astrometric_excess_noise'] >= ASTROMETRIC_EXCESS_NOISE_S:
-            #trimmed_df = trimmed_df.drop([index])
             inds_to_drop.append(index)
         elif 'visibility_periods_used' in df.columns and row['visibility_periods_used'] <= VISIBILITY_PERIODS_S:
-            #trimmed_df = trimmed_df.drop([index])
             inds_to_drop.append(index)
         elif 'phot_g_mean_mag' in df.columns and row['phot_g_mean_mag'] > PHOT_G_MEAN_MAG_S:
-            #trimmed_df = trimmed_df.drop([index])
             inds_to_drop.append(index)
 
     trimmed_df.drop(inds_to_drop, inplace=True)
-
-    '''
-    # parallax error, if error is >= 1/10 of error/parallax, drop it
-    if 'parallax_error' in df.columns and 'parallax' in df.columns:
-        s = 1 / 10
-        for index, row in trimmed_df.iterrows():
-            if row['parallax_error'] / row['parallax'] >= s:
-                trimmed_df = trimmed_df.drop([index])
-
-    # duplicate source, if star is a duplicate drop it
-    if 'duplicated_source' in df.columns:
-        for index, row in trimmed_df.iterrows():
-            if row['duplicated_source'] == True:
-                trimmed_df = trimmed_df.drop([index])
-
-    # astronometric excess noise, if the noise is >= 1 drop it
-    if 'astrometric_excess_noise' in df.columns:
-        s = 1
-        for index, row in trimmed_df.iterrows():
-            if row['astrometric_excess_noise'] >= s:
-                # print(row['astrometric_excess_noise'])
-                trimmed_df = trimmed_df.drop([index])
-
-    # visibility periods used, if less than 5 visibility periods drop it
-    if 'visibility_periods_used' in df.columns:
-        s = 5
-        for index, row in trimmed_df.iterrows():
-            if row['visibility_periods_used'] <= s:
-                trimmed_df = trimmed_df.drop([index])
-
-    # gmag, if gmag is greater than 19 drop it
-    if 'phot_g_mean_mag' in df.columns:
-        s = 19
-        for index, row in trimmed_df.iterrows():
-            if row['phot_g_mean_mag'] > s:
-                trimmed_df = trimmed_df.drop([index])
-    '''
 
     return trimmed_df
 
