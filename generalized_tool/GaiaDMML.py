@@ -5,10 +5,12 @@ Author: Laura Vannozzi
 
 import sys
 import math
+import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
+from scipy.signal import find_peaks
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
 
@@ -58,7 +60,7 @@ def create_df(csvfile):
     :param csvfile: Needs to contain parallax in mas, g-r and b-r color indexes, g mean magnitude of each star
     :return:
     """
-    df = pd.read_csv(csvfile)
+    df = pd.read_csv(csvfile, low_memory=False)
     if 'parallax' in df.columns:
         df = df.dropna(subset=['parallax'])
         df.loc[:, 'parallax_arcsec'] = df['parallax'].apply(lambda x: x * .001)
@@ -86,14 +88,14 @@ def create_df(csvfile):
 def distance_plot(df, csvfile):
     fig = plt.figure()
     axp = fig.add_subplot(221, projection='3d')
-    axp.scatter(df['x'], df['z'], df['y'], s=0.05)
+    axp.scatter(df['x'], df['z'], df['y'], s=0.01)
     axp.set_xlabel('x')
     axp.set_ylabel('z')
     axp.set_zlabel('y')
     axp.set_title(csvfile)
 
     axp1 = fig.add_subplot(222, projection='3d')
-    axp1.scatter(df['x'], df['z'], df['y'], s=0.05)
+    axp1.scatter(df['x'], df['z'], df['y'], s=0.01)
     axp1.set_xlabel('x')
     axp1.set_ylabel('z')
     axp1.set_zlabel('y')
@@ -101,7 +103,7 @@ def distance_plot(df, csvfile):
     axp1.view_init(0, 90)
 
     axp2 = fig.add_subplot(223, projection='3d')
-    axp2.scatter(df['x'], df['z'], df['y'], s=0.05)
+    axp2.scatter(df['x'], df['z'], df['y'], s=0.01)
     axp2.set_xlabel('x')
     axp2.set_ylabel('z')
     axp2.set_zlabel('y')
@@ -109,7 +111,7 @@ def distance_plot(df, csvfile):
     axp2.view_init(0, 180)
 
     axp3 = fig.add_subplot(224, projection='3d')
-    axp3.scatter(df['x'], df['z'], df['y'], s=0.05)
+    axp3.scatter(df['x'], df['z'], df['y'], s=0.01)
     axp3.set_xlabel('x')
     axp3.set_ylabel('z')
     axp3.set_zlabel('y')
@@ -118,24 +120,70 @@ def distance_plot(df, csvfile):
 
     plt.savefig('distance_plot.png')
 
-def pm_plots(df, df_trimmed, csvfile):
+def pm_plots(df, df_trimmed, csvfile, num):
 
     if 'pmra' in df.columns and 'pmdec' in df.columns:
+
+        # Find the max proper motion in the RA direction
+        count, division = np.histogram(df['pmra'], bins=100)
+        peaks, props = find_peaks(count)
+        temp = []
+        for i in peaks:
+            if count[i] > num:
+                temp.append([division[i], count[i]])
+        i = 0
+        index = 0
+        best_index = 0
+        for t in temp:
+            if abs(t[0]) > i:
+                i = abs(t[0])
+                best_index = index
+            index += 1
+        pmra_max = temp[best_index][0]
+
+        # Find the max proper motion in the DEC direction
+        count, division = np.histogram(df['pmdec'], bins=100)
+        peaks, props = find_peaks(count)
+        temp = []
+        for i in peaks:
+            if count[i] > num:
+                temp.append([division[i], count[i]])
+        i = 0
+        index = 0
+        best_index = 0
+        for t in temp:
+            if abs(t[0]) > i:
+                i = abs(t[0])
+                best_index = index
+            index += 1
+        pmdec_max = temp[best_index][0]
 
         fig = plt.figure()
 
         ax = fig.add_subplot(121)
         ax.scatter(df['pmra'], df['pmdec'], s=0.1)
-        ax.set_xlim(-100, 100)
-        ax.set_ylim(-100, 100)
+        if pmra_max > 0:
+            ax.set_xlim(-(pmra_max * 2), pmra_max * 2)
+        else:
+            ax.set_xlim(pmra_max * 2, -(pmra_max * 2))
+        if pmdec_max > 0:
+            ax.set_ylim(-(pmdec_max * 2), pmdec_max * 2)
+        else:
+            ax.set_ylim(pmdec_max * 2, -(pmdec_max * 2))
         ax.set_title(csvfile)
         ax.set_xlabel("pmra")
         ax.set_ylabel("pmdec")
 
         ax1 = fig.add_subplot(122)
         ax1.scatter(df_trimmed['pmra'], df_trimmed['pmdec'], s=0.1)
-        ax1.set_xlim(-100, 100)
-        ax1.set_ylim(-100, 100)
+        if pmra_max > 0:
+            ax1.set_xlim(-(pmra_max * 2), pmra_max * 2)
+        else:
+            ax1.set_xlim(pmra_max * 2, -(pmra_max * 2))
+        if pmdec_max > 0:
+            ax1.set_ylim(-(pmdec_max * 2), pmdec_max * 2)
+        else:
+            ax1.set_ylim(pmdec_max * 2, -(pmdec_max * 2))
         ax1.set_title(csvfile + " trimmed")
         ax1.set_xlabel("pmra")
         ax1.set_ylabel("pmdec")
@@ -146,6 +194,7 @@ def pm_plots(df, df_trimmed, csvfile):
         print("Need columns \'pmra\' and \'pmdec\' to plot proper motion diagram.")
         exit()
 
+
 def hr_plots(df, csvfile):
 
     if 'g_rp' in df.columns and 'bp_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
@@ -154,7 +203,7 @@ def hr_plots(df, csvfile):
 
         ax1 = fig.add_subplot(121)
         ax1.scatter(df['g_rp'], df['phot_g_mean_mag'], s=1)
-        ax1.set_xlim(-1, 3)
+        ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
         ax1.set_title(csvfile + ' g-r')
         ax1.set_xlabel("color index (g-rp)")
@@ -190,7 +239,7 @@ def hr_plots(df, csvfile):
 
         ax1 = fig.add_subplot(111)
         ax1.scatter(df['g_rp'], df['phot_g_mean_mag'], s=1)
-        ax1.set_xlim(-1, 3)
+        ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
         ax1.set_title(csvfile + ' g-r')
         ax1.set_xlabel("color index (g-rp)")
@@ -241,7 +290,7 @@ def trimmed_hr(trimmed_df, csvfile):
 
         ax1 = fig.add_subplot(121)
         ax1.scatter(trimmed_df['g_rp'], trimmed_df['phot_g_mean_mag'], s=1)
-        ax1.set_xlim(-1, 3)
+        ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
         ax1.set_title(csvfile + ' trimmed g-r')
         ax1.set_xlabel("color index (g-rp)")
@@ -277,7 +326,7 @@ def trimmed_hr(trimmed_df, csvfile):
 
         ax1 = fig.add_subplot(111)
         ax1.scatter(trimmed_df['g_rp'], trimmed_df['phot_g_mean_mag'], s=1)
-        ax1.set_xlim(-1, 3)
+        ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
         ax1.set_title(csvfile + ' trimmed g-r')
         ax1.set_xlabel("color index (g-rp)")
@@ -294,11 +343,11 @@ def trimmed_hr(trimmed_df, csvfile):
 Machine Learning running DBSCAN on the data to find the cluster(s).
 """
 
-def source_id(d):
+def source_id(d, num, epsilon):
     df = d[['x', 'y', 'z', 'pmra', 'pmdec', 'phot_g_mean_mag', 'source_id']]
     X = df.to_numpy()
 
-    db = DBSCAN(eps=5, min_samples=150).fit(X)  # HERE
+    db = DBSCAN(eps=epsilon, min_samples=num).fit(X)
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     core_samples_mask[db.core_sample_indices_] = True
     labels = db.labels_
@@ -320,11 +369,11 @@ def source_id(d):
     return df_all_temp
 
 
-def machine_learning(d):
+def machine_learning(d, num, epsilon):
     df = d[['x', 'y', 'z', 'pmra', 'pmdec', 'phot_g_mean_mag']]
     X = df.to_numpy()
 
-    db = DBSCAN(eps=5, min_samples=150).fit(X)  # HERE
+    db = DBSCAN(eps=epsilon, min_samples=num).fit(X)
     core_samples_mask = np.zeros_like(db.labels_, dtype=bool)
     core_samples_mask[db.core_sample_indices_] = True
     labels = db.labels_
@@ -368,7 +417,7 @@ def machine_learning(d):
 
         xy = X[class_member_mask & ~core_samples_mask]
         axp.scatter(xy[:, 0], xy[:, 1], facecolor=tuple(col),
-                    edgecolor='k', s=0.05)
+                    edgecolor='k', s=0.01)
 
     axp.set_xlabel('x')
     axp.set_ylabel('z')
@@ -420,7 +469,12 @@ def main():
           "The csv file you enter should contain these columns for the program to run smoothly:\n"
           "parallax, b, l, pmra, pmdec, phot_g_mean_mag, and either bp_rp or g_rp.\n\n"
           "In order to trim the data for better results, these columns are appreciated, but not necessary:\n"
-          "parallax_error, duplicated_source, astrometric_excess_noise, and visibility_periods_used.\n\n")
+          "parallax_error, duplicated_source, astrometric_excess_noise, and visibility_periods_used.\n\n"
+          "To download data, visit: https://gea.esac.esa.int/archive/\n"
+          "An example query to ensure you have all the right columns:\n"
+          "SELECT * from gaiadr2.gaia_source where \n"
+          "RA between 50 and 60 AND DEC between 20 and 30 \n"
+          "AND parallax > 6.2 AND parallax < 12.5\n\n")
 
     arg = input("Please enter a csv file: ")
     #while arg.split(".")[1] != 'csv':
@@ -429,6 +483,7 @@ def main():
     csvfile = arg
 
     # Data Mining
+    start1 = time.time()
     # Create the df
     df = create_df(csvfile)
     # Plot the data
@@ -438,24 +493,39 @@ def main():
     trimmed_df = trim_data(df)
     # Plot the trimmed data
     trimmed_hr(trimmed_df, csvfile)
-    # Plot the proper motion
-    pm_plots(df, trimmed_df, csvfile)
+    end1 = time.time()
+    print("Time of DM: ", end1-start1)
 
-    ans = input("Would you like to continue onto DBSCAN? (y/n) ")
+    ans = input("\nWould you like to continue onto DBSCAN? (y/n) ")
     temp = ans
     while temp not in ('y', 'n'):
         ans = input("Please input y or n: ")
         temp = ans
     if temp == 'y':
+        num = input("How many stars are considered a cluster? (Default enter 200): ")
+        while not num.isdigit():
+            num = input("Please enter an integer: ")
+        epsilon = input("How far away do the stars spread from the center in parsecs (Default enter 5): ")
+        while not epsilon.isdigit():
+            epsilon = input("Please enter an integer: ")
         print()
+
+        start2 = time.time()
+        # Plot the proper motion
+        pm_plots(df, trimmed_df, csvfile, int(num))
         #Machine Learning
         # Find source_id in df
-        df_all_temp = source_id(df)
+        df_all_temp = source_id(df, int(num), int(epsilon))
         # Find df for DBSCAN, and array of labels
-        df_all, labels, n_clusters, n_noise = machine_learning(df)
+        df_all, labels, n_clusters, n_noise = machine_learning(df, int(num), int(epsilon))
         # Calculate how many stars are in the cluster(s) vs anomaly
         amount(labels, n_clusters, n_noise)
-        compare_hr(trimmed_df, df_all, df_all_temp)
+        if n_clusters > 0:
+            compare_hr(trimmed_df, df_all, df_all_temp)
+        end2 = time.time()
+        print("\nTime of ML: ", end2 - start2)
+        print("Time of program: ", end2 - start1)
+
     else:
         print("Program end.")
 
