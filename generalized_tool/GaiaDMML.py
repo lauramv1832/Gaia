@@ -206,6 +206,25 @@ def hr_plots(df, csvfile):
 def trim_data(df):
     trimmed_df = df
 
+    PARALLAX_S = 1 / 10
+    ASTROMETRIC_EXCESS_NOISE_S = 1
+    VISIBILITY_PERIODS_S = 5
+    PHOT_G_MEAN_MAG_S = 19
+
+    for index, row in trimmed_df.iterrows():
+        if 'parallax_error' in df.columns and 'parallax' in df.columns \
+        and row['parallax_error'] / row['parallax'] >= PARALLAX_S:
+            trimmed_df = trimmed_df.drop([index])
+        elif 'duplicated_source' in df.columns and row['duplicated_source'] == True:
+            trimmed_df = trimmed_df.drop([index])
+        elif 'astrometric_excess_noise' in df.columns and row['astrometric_excess_noise'] >= ASTROMETRIC_EXCESS_NOISE_S:
+            trimmed_df = trimmed_df.drop([index])
+        elif 'visibility_periods_used' in df.columns and row['visibility_periods_used'] <= VISIBILITY_PERIODS_S:
+            trimmed_df = trimmed_df.drop([index])
+        elif 'phot_g_mean_mag' in df.columns and row['phot_g_mean_mag'] > PHOT_G_MEAN_MAG_S:
+            trimmed_df = trimmed_df.drop([index])
+
+    '''
     # parallax error, if error is >= 1/10 of error/parallax, drop it
     if 'parallax_error' in df.columns and 'parallax' in df.columns:
         s = 1 / 10
@@ -240,6 +259,7 @@ def trim_data(df):
         for index, row in trimmed_df.iterrows():
             if row['phot_g_mean_mag'] > s:
                 trimmed_df = trimmed_df.drop([index])
+    '''
 
     return trimmed_df
 
