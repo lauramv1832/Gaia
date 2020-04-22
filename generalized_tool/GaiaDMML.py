@@ -211,18 +211,27 @@ def trim_data(df):
     VISIBILITY_PERIODS_S = 5
     PHOT_G_MEAN_MAG_S = 19
 
+    inds_to_drop = []
+
     for index, row in trimmed_df.iterrows():
         if 'parallax_error' in df.columns and 'parallax' in df.columns \
         and row['parallax_error'] / row['parallax'] >= PARALLAX_S:
-            trimmed_df = trimmed_df.drop([index])
+            #trimmed_df = trimmed_df.drop([index])
+            inds_to_drop.append(index)
         elif 'duplicated_source' in df.columns and row['duplicated_source'] == True:
-            trimmed_df = trimmed_df.drop([index])
+            #trimmed_df = trimmed_df.drop([index])
+            inds_to_drop.append(index)
         elif 'astrometric_excess_noise' in df.columns and row['astrometric_excess_noise'] >= ASTROMETRIC_EXCESS_NOISE_S:
-            trimmed_df = trimmed_df.drop([index])
+            #trimmed_df = trimmed_df.drop([index])
+            inds_to_drop.append(index)
         elif 'visibility_periods_used' in df.columns and row['visibility_periods_used'] <= VISIBILITY_PERIODS_S:
-            trimmed_df = trimmed_df.drop([index])
+            #trimmed_df = trimmed_df.drop([index])
+            inds_to_drop.append(index)
         elif 'phot_g_mean_mag' in df.columns and row['phot_g_mean_mag'] > PHOT_G_MEAN_MAG_S:
-            trimmed_df = trimmed_df.drop([index])
+            #trimmed_df = trimmed_df.drop([index])
+            inds_to_drop.append(index)
+
+    trimmed_df.drop(inds_to_drop, inplace=True)
 
     '''
     # parallax error, if error is >= 1/10 of error/parallax, drop it
