@@ -13,6 +13,11 @@ from sklearn.cluster import DBSCAN
 from scipy.signal import find_peaks
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
+DBSCAN_FILENAME = "DBSCAN.png"
+HRPLOTS_FILENAME = "hr_plots.png"
+TRIMMED_FILENAME = "hr_plots_trimmed.png"
+DISTANCE_FILENAME = "distance_plot.png"
+PMPLOTS_FILENAME = "pm_plots.png"
 
 """
 Data Mining including displaying plots of the data
@@ -53,7 +58,6 @@ def radius(l, t):
     ans = l/(4*math.pi*const*math.pow(t, 4))
     return math.log10(math.sqrt(ans))
 
-
 def create_df(csvfile):
     """
 
@@ -85,7 +89,7 @@ def create_df(csvfile):
     #df.loc[:, 'radius'] = df.apply(lambda r: radius(r['luminosity'], r['teff_val']), axis=1)
 
 
-def distance_plot(df, csvfile):
+def distance_plot(df, csvfile, out_file=None):
     fig = plt.figure()
     axp = fig.add_subplot(221, projection='3d')
     axp.scatter(df['x'], df['z'], df['y'], s=0.01)
@@ -118,9 +122,12 @@ def distance_plot(df, csvfile):
     axp3.set_title(csvfile)
     axp3.view_init(-90, 0)
 
-    plt.savefig('distance_plot.png')
+    if out_file is None:
+        plt.savefig(DISTANCE_FILENAME)
+    else:
+        plt.savefig(out_file, format="png")
 
-def pm_plots(df, df_trimmed, csvfile, num):
+def pm_plots(df, df_trimmed, csvfile, num, out_file=None):
 
     if 'pmra' in df.columns and 'pmdec' in df.columns:
 
@@ -188,14 +195,17 @@ def pm_plots(df, df_trimmed, csvfile, num):
         ax1.set_xlabel("pmra")
         ax1.set_ylabel("pmdec")
 
-        plt.savefig('pm_plots.png')
+        if out_file is None:
+            plt.savefig(PMPLOTS_FILENAME)
+        else:
+            plt.savefig(out_file, format="png")
 
     else:
         print("Need columns \'pmra\' and \'pmdec\' to plot proper motion diagram.")
         exit()
 
 
-def hr_plots(df, csvfile):
+def hr_plots(df, csvfile, out_file=None):
 
     if 'g_rp' in df.columns and 'bp_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
 
@@ -217,7 +227,10 @@ def hr_plots(df, csvfile):
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
-        plt.savefig('hr_plots.png')
+        if out_file is None:
+            plt.savefig(HRPLOTS_FILENAME)
+        else:
+            plt.savefig(out_file, format="png")
 
     elif 'bp_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
 
@@ -231,7 +244,10 @@ def hr_plots(df, csvfile):
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
-        plt.savefig('hr_plots.png')
+        if out_file is None:
+            plt.savefig(HRPLOTS_FILENAME)
+        else:
+            plt.savefig(out_file, format="png")
 
     elif 'g_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
 
@@ -245,7 +261,10 @@ def hr_plots(df, csvfile):
         ax1.set_xlabel("color index (g-rp)")
         ax1.set_ylabel("abs mag (g)")
 
-        plt.savefig('hr_plots.png')
+        if out_file is None:
+            plt.savefig(HRPLOTS_FILENAME)
+        else:
+            plt.savefig(out_file, format="png")
 
     else:
         print("Need column \'phot_g_mean_mag\' and either columns \'g_rp\' or \'bp_rp\' or both to plot HR diagram(s)")
@@ -280,7 +299,7 @@ def trim_data(df):
     return trimmed_df
 
 
-def trimmed_hr(trimmed_df, csvfile):
+def trimmed_hr(trimmed_df, csvfile, out_file=None):
 
     if 'g_rp' in trimmed_df.columns and \
                     'bp_rp' in trimmed_df.columns and \
@@ -304,7 +323,10 @@ def trimmed_hr(trimmed_df, csvfile):
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
-        plt.savefig('hr_plots_trimmed.png')
+        if out_file is None:
+            plt.savefig(TRIMMED_FILENAME)
+        else:
+            plt.savefig(out_file, format="png")
 
     elif 'bp_rp' in trimmed_df.columns and 'phot_g_mean_mag' in trimmed_df.columns:
 
@@ -318,7 +340,10 @@ def trimmed_hr(trimmed_df, csvfile):
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
-        plt.savefig('hr_plots_trimmed.png')
+        if out_file is None:
+            plt.savefig(TRIMMED_FILENAME)
+        else:
+            plt.savefig(out_file, format="png")
 
     elif 'g_rp' in trimmed_df.columns and 'phot_g_mean_mag' in trimmed_df.columns:
 
@@ -332,7 +357,10 @@ def trimmed_hr(trimmed_df, csvfile):
         ax1.set_xlabel("color index (g-rp)")
         ax1.set_ylabel("abs mag (g)")
 
-        plt.savefig('hr_plots_trimmed.png')
+        if out_file is None:
+            plt.savefig(TRIMMED_FILENAME)
+        else:
+            plt.savefig(out_file, format="png")
 
     else:
         print("Need column \'phot_g_mean_mag\' and either columns \'g_rp\' or \'bp_rp\' to plot HR diagram(s)")
@@ -369,7 +397,7 @@ def source_id(d, num, epsilon):
     return df_all_temp
 
 
-def machine_learning(d, num, epsilon):
+def machine_learning(d, num, epsilon, out_file=None):
     df = d[['x', 'y', 'z', 'pmra', 'pmdec', 'phot_g_mean_mag']]
     X = df.to_numpy()
 
@@ -423,7 +451,10 @@ def machine_learning(d, num, epsilon):
     axp.set_ylabel('z')
     axp.set_zlabel('y')
     axp.set_title('DBSCAN')
-    plt.savefig('DBSCAN.png')
+    if out_file is None:
+        plt.savefig(DBSCAN_FILENAME)
+    else:
+        plt.savefig(out_file, format="png")
 
     return df_all, labels, n_clusters, n_noise
 
