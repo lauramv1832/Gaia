@@ -473,6 +473,12 @@ def amount(labels, n_clusters, n_noise):
                 arr[j] += 1
     return arr
 
+def print_compare(df_trimmed, df_all, df_all_temp):
+    correct, incorrect, accuracy = compare_hr(df_trimmed, df_all, df_all_temp)
+    print(f"Correctly clustered: {correct}")
+    print(f"Incorrectly clustered: {incorrect}")
+    print(f"Accuracy: {accuracy}")
+
 def compare_hr(df_trimmed, df_all, df_all_temp):
     df_temp = df_all_temp[['source_id']]
     frames = [df_temp, df_all]
@@ -490,9 +496,7 @@ def compare_hr(df_trimmed, df_all, df_all_temp):
                 correct += 1
             else:
                 incorrect += 1
-    print("Correctly clustered: ", correct)
-    print("Incorrectly clustered: ", incorrect)
-    print("Accuracy: ", correct/(incorrect+correct))
+    return correct, incorrect, correct/(incorrect+correct)
 
 
 def main():
@@ -557,7 +561,7 @@ def main():
         # Calculate how many stars are in the cluster(s) vs anomaly
         print_amount(labels, n_clusters, n_noise)
         if n_clusters > 0:
-            compare_hr(trimmed_df, df_all, df_all_temp)
+            print_compare(trimmed_df, df_all, df_all_temp)
         end2 = time.time()
         print("\nTime of ML: ", end2 - start2)
         print("Time of program: ", end2 - start1)

@@ -18,7 +18,7 @@ class GaiaData:
     incorrectly_clustered: Optional[int]
     accuracy: Optional[float]
     anomaly: Optional[int]
-    cluster_nums: Optional[List[int]]
+    actual_cluster_sizes: Optional[List[int]]
 
 def run_gaia(csv, db_scan, epsilon, cluster_size):
     csv_file = io.StringIO(csv)
@@ -30,12 +30,21 @@ def run_gaia(csv, db_scan, epsilon, cluster_size):
     trimmed_df = trim_data(df)
     trimmed_bytes = io.BytesIO()
     trimmed_hr(trimmed_df, csv_file, trimmed_bytes)
-    pm_bytes = None
+    pm_bytes, correctly_clustered, incorrectly_clustered, accuracy = (None, None, None, None)
+    anomaly, actual_cluster_sizes = (None, None)
     if db_scan:
         # do DBScan stuff
         pm_bytes = io.BytesIO()
         pm_plots(df, trimmed_df, csv_file, cluster_size)
-        
+        df_all_temp = source_id(df, int(cluster_size), int(epsilon))
+        df_all, labels, n_clusters, n_noise = machine_learning(df, int(cluster_size), int(epsilon))
+        anomaly = n_noise
+        actual_cluster_sizes = amount(labels, n_clusters, n_noise)
+        if n_clusters > 0:
+            correctly_clustered, incorrectly_clustered, accuracy = compare_hr(trimmed_df, df_all, df_all_temp)
+    gaia_obj = GaiaData(hr_bytes, trimmed_bytes, distance_bytes, pm_bytes, correctly_clustered,
+                        incorrectly_clustered, accuracy, anomaly, actual_cluster_sizes)
+    return gaia_obj
 
 def callback(ch, method, properties, body):
     request_info = json.loads(body)
