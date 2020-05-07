@@ -458,15 +458,20 @@ def machine_learning(d, num, epsilon, out_file=None):
 
     return df_all, labels, n_clusters, n_noise
 
+def print_amount(labels, n_clusters, n_noise):
+    amounts = amount(labels, n_clusters, n_noise)
+    print(f"Anomaly: {n_noise}")
+    for i in range(0, len(amounts)):
+        print(f"Cluster {i + 1}: {amounts[i]}")
+    print()
+
 def amount(labels, n_clusters, n_noise):
     arr = [0] * n_clusters
-    print("Anomaly: ", n_noise)
     for j in range(0, n_clusters):
         for i in labels:
             if i == j:
                 arr[j] += 1
-        print("Cluster " + str(j + 1) + ": ", arr[j])
-    print()
+    return arr
 
 def compare_hr(df_trimmed, df_all, df_all_temp):
     df_temp = df_all_temp[['source_id']]
@@ -550,7 +555,7 @@ def main():
         # Find df for DBSCAN, and array of labels
         df_all, labels, n_clusters, n_noise = machine_learning(df, int(num), int(epsilon))
         # Calculate how many stars are in the cluster(s) vs anomaly
-        amount(labels, n_clusters, n_noise)
+        print_amount(labels, n_clusters, n_noise)
         if n_clusters > 0:
             compare_hr(trimmed_df, df_all, df_all_temp)
         end2 = time.time()
