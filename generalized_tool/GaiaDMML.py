@@ -89,21 +89,24 @@ def create_df(csvfile):
     #df.loc[:, 'radius'] = df.apply(lambda r: radius(r['luminosity'], r['teff_val']), axis=1)
 
 
-def distance_plot(df, csvfile, out_file=None):
+def distance_plot(df, csvfile, csv_filename=None, out_file=None):
+    if csv_filename is None:
+        csv_filename = csvfile
+    
     fig = plt.figure()
     axp = fig.add_subplot(221, projection='3d')
     axp.scatter(df['x'], df['z'], df['y'], s=0.01)
     axp.set_xlabel('x')
     axp.set_ylabel('z')
     axp.set_zlabel('y')
-    axp.set_title(csvfile)
+    axp.set_title(csv_filename)
 
     axp1 = fig.add_subplot(222, projection='3d')
     axp1.scatter(df['x'], df['z'], df['y'], s=0.01)
     axp1.set_xlabel('x')
     axp1.set_ylabel('z')
     axp1.set_zlabel('y')
-    axp1.set_title(csvfile)
+    axp1.set_title(csv_filename)
     axp1.view_init(0, 90)
 
     axp2 = fig.add_subplot(223, projection='3d')
@@ -111,7 +114,7 @@ def distance_plot(df, csvfile, out_file=None):
     axp2.set_xlabel('x')
     axp2.set_ylabel('z')
     axp2.set_zlabel('y')
-    axp2.set_title(csvfile)
+    axp2.set_title(csv_filename)
     axp2.view_init(0, 180)
 
     axp3 = fig.add_subplot(224, projection='3d')
@@ -119,7 +122,7 @@ def distance_plot(df, csvfile, out_file=None):
     axp3.set_xlabel('x')
     axp3.set_ylabel('z')
     axp3.set_zlabel('y')
-    axp3.set_title(csvfile)
+    axp3.set_title(csv_filename)
     axp3.view_init(-90, 0)
 
     if out_file is None:
@@ -127,13 +130,16 @@ def distance_plot(df, csvfile, out_file=None):
     else:
         plt.savefig(out_file, format="png")
 
-def pm_plots(df, df_trimmed, csvfile, num, out_file=None):
+def pm_plots(df, df_trimmed, csvfile, num, csv_filename=None, out_file=None):
+
+    if csv_filename is None:
+        csv_filename = csvfile
 
     if 'pmra' in df.columns and 'pmdec' in df.columns:
 
         # Find the max proper motion in the RA direction
         count, division = np.histogram(df['pmra'], bins=100)
-        peaks, props = find_peaks(count)
+        peaks, _ = find_peaks(count)
         temp = []
         for i in peaks:
             if count[i] > num:
@@ -150,7 +156,7 @@ def pm_plots(df, df_trimmed, csvfile, num, out_file=None):
 
         # Find the max proper motion in the DEC direction
         count, division = np.histogram(df['pmdec'], bins=100)
-        peaks, props = find_peaks(count)
+        peaks, _ = find_peaks(count)
         temp = []
         for i in peaks:
             if count[i] > num:
@@ -177,7 +183,7 @@ def pm_plots(df, df_trimmed, csvfile, num, out_file=None):
             ax.set_ylim(-(pmdec_max * 2), pmdec_max * 2)
         else:
             ax.set_ylim(pmdec_max * 2, -(pmdec_max * 2))
-        ax.set_title(csvfile)
+        ax.set_title(csv_filename)
         ax.set_xlabel("pmra")
         ax.set_ylabel("pmdec")
 
@@ -191,7 +197,7 @@ def pm_plots(df, df_trimmed, csvfile, num, out_file=None):
             ax1.set_ylim(-(pmdec_max * 2), pmdec_max * 2)
         else:
             ax1.set_ylim(pmdec_max * 2, -(pmdec_max * 2))
-        ax1.set_title(csvfile + " trimmed")
+        ax1.set_title(csv_filename + " trimmed")
         ax1.set_xlabel("pmra")
         ax1.set_ylabel("pmdec")
 
@@ -205,7 +211,10 @@ def pm_plots(df, df_trimmed, csvfile, num, out_file=None):
         exit()
 
 
-def hr_plots(df, csvfile, out_file=None):
+def hr_plots(df, csvfile, csv_filename=None, out_file=None):
+
+    if csv_filename is None:
+        csv_filename = csvfile
 
     if 'g_rp' in df.columns and 'bp_rp' in df.columns and 'phot_g_mean_mag' in df.columns:
 
@@ -215,7 +224,7 @@ def hr_plots(df, csvfile, out_file=None):
         ax1.scatter(df['g_rp'], df['phot_g_mean_mag'], s=1)
         ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
-        ax1.set_title(csvfile + ' g-r')
+        ax1.set_title(csv_filename + ' g-r')
         ax1.set_xlabel("color index (g-rp)")
         ax1.set_ylabel("abs mag (g)")
 
@@ -223,7 +232,7 @@ def hr_plots(df, csvfile, out_file=None):
         ax2.scatter(df['bp_rp'], df['phot_g_mean_mag'], s=1)
         ax2.set_xlim(-1, 5)
         ax2.set_ylim(25, 0)
-        ax2.set_title(csvfile + ' b-r')
+        ax2.set_title(csv_filename + ' b-r')
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
@@ -240,7 +249,7 @@ def hr_plots(df, csvfile, out_file=None):
         ax2.scatter(df['bp_rp'], df['phot_g_mean_mag'], s=1)
         ax2.set_xlim(-1, 5)
         ax2.set_ylim(25, 0)
-        ax2.set_title(csvfile + ' b-r')
+        ax2.set_title(csv_filename + ' b-r')
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
@@ -257,7 +266,7 @@ def hr_plots(df, csvfile, out_file=None):
         ax1.scatter(df['g_rp'], df['phot_g_mean_mag'], s=1)
         ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
-        ax1.set_title(csvfile + ' g-r')
+        ax1.set_title(csv_filename + ' g-r')
         ax1.set_xlabel("color index (g-rp)")
         ax1.set_ylabel("abs mag (g)")
 
@@ -299,7 +308,10 @@ def trim_data(df):
     return trimmed_df
 
 
-def trimmed_hr(trimmed_df, csvfile, out_file=None):
+def trimmed_hr(trimmed_df, csvfile, csv_filename=None, out_file=None):
+
+    if csv_filename is None:
+        csv_filename = csvfile
 
     if 'g_rp' in trimmed_df.columns and \
                     'bp_rp' in trimmed_df.columns and \
@@ -311,7 +323,7 @@ def trimmed_hr(trimmed_df, csvfile, out_file=None):
         ax1.scatter(trimmed_df['g_rp'], trimmed_df['phot_g_mean_mag'], s=1)
         ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
-        ax1.set_title(csvfile + ' trimmed g-r')
+        ax1.set_title(csv_filename + ' trimmed g-r')
         ax1.set_xlabel("color index (g-rp)")
         ax1.set_ylabel("abs mag (g)")
 
@@ -319,7 +331,7 @@ def trimmed_hr(trimmed_df, csvfile, out_file=None):
         ax2.scatter(trimmed_df['bp_rp'], trimmed_df['phot_g_mean_mag'], s=1)
         ax2.set_xlim(-1, 5)
         ax2.set_ylim(25, 0)
-        ax2.set_title(csvfile + ' trimmed b-r')
+        ax2.set_title(csv_filename + ' trimmed b-r')
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
@@ -336,7 +348,7 @@ def trimmed_hr(trimmed_df, csvfile, out_file=None):
         ax2.scatter(trimmed_df['bp_rp'], trimmed_df['phot_g_mean_mag'], s=1)
         ax2.set_xlim(-1, 5)
         ax2.set_ylim(25, 0)
-        ax2.set_title(csvfile + ' trimmed b-r')
+        ax2.set_title(csv_filename + ' trimmed b-r')
         ax2.set_xlabel("color index (bp-rp)")
         ax2.set_ylabel("abs mag (g)")
 
@@ -353,7 +365,7 @@ def trimmed_hr(trimmed_df, csvfile, out_file=None):
         ax1.scatter(trimmed_df['g_rp'], trimmed_df['phot_g_mean_mag'], s=1)
         ax1.set_xlim(-1, 5)
         ax1.set_ylim(25, 0)
-        ax1.set_title(csvfile + ' trimmed g-r')
+        ax1.set_title(csv_filename + ' trimmed g-r')
         ax1.set_xlabel("color index (g-rp)")
         ax1.set_ylabel("abs mag (g)")
 
